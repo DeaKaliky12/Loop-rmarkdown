@@ -1,0 +1,245 @@
+/* --- From Uploaded CSS (light/dark mode & TOC toggle) --- */
+/* ==== Light Mode (Default) ==== */
+body {
+  background-color: #F5EEDD;
+  color: #077A7D;
+  font-family: "Segoe UI", sans-serif;
+  line-height: 1.6;
+  max-width: auto;
+  margin: auto;
+  padding: 2em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #077A7D;
+  font-weight: bold;
+}
+
+a {
+  color: #045C5D;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+pre, code {
+  background-color: #E5F5F1;
+  color: #033;
+  padding: 0.3em 0.5em;
+  border-radius: 5px;
+  font-family: Consolas, monospace;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  color: #045C5D;
+}
+
+table, th, td {
+  border: 1px solid #b5d0c3;
+}
+
+th, td {
+  padding: 0.6em;
+  text-align: left;
+}
+
+img {
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+/* ==== Dark Mode (Manual Triggered) ==== */
+body.dark {
+  background-color: #06202B;
+  color: #7AE2CF;
+}
+
+body.dark h1, 
+body.dark h2, 
+body.dark h3, 
+body.dark h4, 
+body.dark h5, 
+body.dark h6 {
+  color: #7AE2CF;
+}
+
+body.dark a {
+  color: #99f6e4;
+}
+
+body.dark pre, 
+body.dark code {
+  background-color: #111c22;
+  color: #7AE2CF;
+}
+
+body.dark table {
+  border: 1px solid #2d5a5f;
+  color: #cafffb;
+}
+
+body.dark th, 
+body.dark td {
+  border: 1px solid #2d5a5f;
+}
+
+/* ==== Theme Toggle Button ==== */
+.theme-toggle {
+  position: fixed;
+  top: 1em;
+  right: 1em;
+  padding: 0.5em 0.8em;
+  font-size: 1.4em;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 9999;
+}
+
+.theme-toggle span {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:active span {
+  transform: rotate(20deg);
+}
+
+/* ==== TOC: Hide by Default, Show via Class ==== */
+#TOC {
+  display: none;
+  background-color: #ffffffcc;
+  padding: 1em;
+  border-radius: 10px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: fixed;
+  top: 4em;
+  left: 1em;
+  z-index: 999;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+body.show-toc #TOC {
+  display: block;
+}
+
+/* ==== TOC Toggle Button ==== */
+.toc-toggle {
+  position: fixed;
+  top: 1em;
+  left: 1em;
+  background-color: #ccc;
+  color: #000;
+  padding: 0.5em 0.8em;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 9999;
+  font-weight: bold;
+}
+
+body.dark .toc-toggle {
+  background-color: #7AE2CF;
+  color: #06202B;
+}
+
+/* ==== Responsive ==== */
+@media (max-width: 900px) {
+  body {
+    padding: 1em;
+    max-width: 95%;
+  }
+
+  #TOC {
+    left: 0.5em;
+  }
+
+  .toc-toggle,
+  .theme-toggle {
+    top: 0.5em;
+    padding: 0.4em 0.6em;
+  }
+}
+
+/* --- From L.rmd CSS Styles (modern feature layout) --- */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin: 40px 0;
+}
+.feature-card {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+.feature-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: white;
+}
+/* Pastikan class toc-float tetap bisa muncul */
+.tocify {
+  background-color: #ffffffdd;
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 100;
+  position: fixed;
+  top: 100px;
+  right: 30px;
+  width: 280px;
+  font-size: 0.95rem;
+}
+
+.tocify ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+.tocify li {
+  margin-bottom: 8px;
+}
+
+.tocify a {
+  color: #2c3e50;
+  text-decoration: none;
+}
+
+.tocify a:hover {
+  color: #667eea;
+  text-decoration: underline;
+}
+.badge-loop {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin: 0 10px;
+  display: inline-block;
+  font-weight: 500;
+  color: white;
+}
+
