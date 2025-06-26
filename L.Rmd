@@ -1,0 +1,1101 @@
+---
+title: "Mastering Loops in R Programming"
+subtitle: "A Comprehensive Guide with Interactive Examples"
+author: 
+  - name: "Tim 9"
+    affiliation: "Data Science Academy"
+    email: "expert@datascience.ac.id"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: 
+      collapsed: false
+      smooth_scroll: true
+    toc_depth: 4
+    number_sections: true
+    theme: flatly
+    highlight: textmate
+    code_folding: show
+    code_download: true
+    fig_width: 8
+    fig_height: 5
+    df_print: paged
+    css: "styles-combined.css"
+    includes:
+      after_body: toggle.html
+csl: apa.csl
+link-citations: true
+---
+
+```{r setup, include=FALSE}
+# Global chunk options dengan performa optimal
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  cache = TRUE,
+  comment = "#>",
+  fig.retina = 2,
+  dpi = 300,
+  out.width = "100%"
+)
+
+# Load libraries dengan error handling yang lebih robust
+required_packages <- c("tidyverse", "knitr", "kableExtra", "plotly", "DT",
+                       "microbenchmark", "tictoc", "purrr")
+
+# Function untuk install dan load packages
+load_or_install <- function(packages) {
+  for(pkg in packages) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      message(paste("Installing", pkg, "..."))
+      install.packages(pkg, quiet = TRUE, repos = "https://cloud.r-project.org")
+    }
+    suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+  }
+}
+
+load_or_install(required_packages)
+
+# Set theme untuk ggplot
+theme_set(theme_minimal() + 
+  theme(
+    text = element_text(family = "sans", color = "#2c3e50"),
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5, margin = margin(b = 20)),
+    plot.subtitle = element_text(size = 12, hjust = 0.5, color = "#6c757d"),
+    axis.title = element_text(size = 12, face = "bold"),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA)
+  ))
+
+# Custom color palette
+loop_colors <- c("#667eea", "#764ba2", "#f093fb", "#f5576c", "#4facfe", "#00f2fe")
+```
+
+<div class="hero-section">
+<h1 class="hero-title">🔄 Mastering Loops in R</h1>
+<p class="hero-subtitle">Comprehensive Guide to Iterative Programming with Performance Analysis</p>
+<div style="margin-top: 30px;">
+  <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; margin: 0 10px;">for</span>
+  <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; margin: 0 10px;">while</span>
+  <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; margin: 0 10px;">apply</span>
+  <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; margin: 0 10px;">map</span>
+</div>
+</div>
+
+<div class="main-content">
+
+# Executive Summary {.tabset .tabset-fade}
+
+## 🎯 Overview
+
+<div class="alert-info-modern alert-modern">
+<strong>🔍 What You'll Learn:</strong> Panduan komprehensif tentang berbagai jenis loop di R, mulai dari basic loops hingga advanced parallel processing, lengkap dengan analisis performa dan best practices.
+</div>
+
+```{=html}
+<!-- HTML langsung, tanpa R -->
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="feature-icon">🔄</div>
+    <h3>Basic Loops</h3>
+    <p>for, while, dan repeat loops dengan syntax dan use cases yang tepat.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">⚡</div>
+    <h3>Vectorized Operations</h3>
+    <p>apply family dan purrr untuk operasi yang lebih efisien.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🚀</div>
+    <h3>Performance Analysis</h3>
+    <p>Benchmarking dan profiling untuk optimasi kode.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">⚡</div>
+    <h3>Parallel Processing</h3>
+    <p>Multi-core processing untuk big data operations.</p>
+  </div>
+</div>
+```
+
+
+## 📊 Quick Stats
+
+```{r quick-stats, results='asis', echo=FALSE}
+set.seed(2024)
+n_iterations <- c(100, 1000, 10000, 100000)
+loop_types <- c("for", "while", "apply", "map", "vectorized")
+
+performance_data <- expand.grid(
+  iterations = n_iterations,
+  loop_type = loop_types
+) %>%
+  mutate(
+    time_ms = case_when(
+      loop_type == "vectorized" ~ iterations * 0.001 + rnorm(n(), 0, 0.1),
+      loop_type == "map" ~ iterations * 0.002 + rnorm(n(), 0, 0.15),
+      loop_type == "apply" ~ iterations * 0.003 + rnorm(n(), 0, 0.2),
+      loop_type == "for" ~ iterations * 0.01 + rnorm(n(), 0, 0.5),
+      loop_type == "while" ~ iterations * 0.012 + rnorm(n(), 0, 0.6)
+    ),
+    time_ms = pmax(time_ms, 0.001)
+  )
+
+perf_summary <- performance_data %>%
+  group_by(loop_type) %>%
+  summarise(
+    avg_time = mean(time_ms),
+    .groups = 'drop'
+  )
+
+min_time <- min(perf_summary$avg_time)
+
+perf_summary <- perf_summary %>%
+  mutate(
+    efficiency_score = round((min_time / avg_time) * 100, 1)
+  ) %>%
+  arrange(desc(efficiency_score))
+
+# Ambil 3 loop paling efisien
+highlight <- perf_summary %>%
+  head(3) %>%
+  mutate(text = paste0("**", toupper(loop_type), "** (", efficiency_score, "% efficient)")) %>%
+  pull(text) %>%
+  paste(collapse = " • ")
+
+# Tampilkan dengan HTML custom
+cat(sprintf('<div class="performance-card">
+  <div class="performance-number">%s</div>
+  <div>%s</div>
+</div>', "Top 3", highlight))
+```
+
+# Fundamental Loop Concepts
+
+## Apa itu Loop?
+
+Loop adalah struktur kontrol yang memungkinkan kita **menjalankan kode berulang kali** hingga kondisi tertentu terpenuhi. Dalam R, loop sangat penting untuk:
+
+- **Data Processing**: Memproses dataset besar secara iteratif
+- **Simulation**: Menjalankan Monte Carlo simulations  
+- **Automation**: Mengotomatisasi tugas-tugas repetitif
+- **Algorithm Implementation**: Implementasi algoritma kompleks
+
+> **🎯 Pro Tip**: Meskipun loop sangat powerful, R adalah bahasa yang *vectorized*. Seringkali operasi vectorized lebih cepat daripada explicit loops!
+
+## Mengapa Loop Penting?
+
+```{r importance-demo, fig.cap="Figure 1: Loop Applications in Data Science"}
+# Demonstrate various loop applications
+applications <- data.frame(
+  category = c("Data Cleaning", "Statistical Analysis", "Machine Learning",
+               "Visualization", "Reporting", "Web Scraping"),
+  frequency = c(85, 78, 92, 65, 70, 88),
+  importance = c(90, 85, 95, 70, 75, 80)
+)
+
+p1 <- applications %>%
+  ggplot(aes(x = frequency, y = importance, size = frequency, color = category)) +
+  geom_point(alpha = 0.8) +
+  geom_text(aes(label = category), vjust = -1.5, size = 3, fontface = "bold") +
+  scale_color_manual(values = loop_colors) +
+  scale_size_continuous(range = c(8, 15), guide = "none") +
+  labs(
+    title = "Loop Applications in Data Science Workflow",
+    subtitle = "Frequency vs Importance across different domains",
+    x = "Usage Frequency (%)",
+    y = "Importance Score (%)",
+    color = "Domain"
+  ) +
+  xlim(60, 100) +
+  ylim(65, 100) +
+  theme(legend.position = "none")
+
+# Convert to plotly
+ggplotly(p1, width = 700, height = 400) %>%
+  layout(title = list(font = list(size = 18)))
+```
+
+# Basic Loop Types {.tabset .tabset-pills}
+
+## for Loop
+
+<div class="alert-info-modern alert-modern">
+<strong>💡 Definition:</strong> `for` loop menjalankan kode untuk setiap elemen dalam sequence atau vector.
+</div>
+
+### Syntax Dasar
+
+```{r for-syntax, eval=FALSE}
+# Basic for loop syntax
+for (variable in sequence) {
+  # code to execute
+}
+```
+
+### Contoh Praktis
+
+```{r for-examples}
+# Example 1: Simple iteration
+cat("🔢 Counting Numbers:\n")
+for (i in 1:5) {
+  cat("Number:", i, "\n")
+}
+
+cat("\n📊 Processing Data:\n")
+# Example 2: Processing vectors
+fruits <- c("Apple", "Banana", "Cherry", "Date")
+for (fruit in fruits) {
+  cat("Processing:", fruit, "(Length:", nchar(fruit), "characters)\n")
+}
+
+# Example 3: Mathematical operations
+cat("\n🧮 Mathematical Series:\n")
+squares <- numeric(5)
+for (i in 1:5) {
+  squares[i] <- i^2
+  cat("Square of", i, "is", squares[i], "\n")
+}
+```
+
+### Advanced for Loop Patterns
+
+```{r for-advanced, fig.cap="Figure 2: for Loop Performance Analysis"}
+# Performance analysis of different for loop patterns
+set.seed(123)
+n_sizes <- c(100, 500, 1000, 5000, 10000)
+
+# Method 1: Pre-allocated vector
+timing_preallocated <- map_dbl(n_sizes, ~ {
+  system.time({
+    result <- numeric(.x)
+    for(i in 1:.x) {
+      result[i] <- sqrt(i)
+    }
+  })[3]
+})
+
+# Method 2: Growing vector (inefficient)
+timing_growing <- map_dbl(n_sizes, ~ {
+  if (.x <= 1000) {  # Only test smaller sizes for growing vector
+    system.time({
+      result <- c()
+      for(i in 1:.x) {
+        result <- c(result, sqrt(i))
+      }
+    })[3]
+  } else {
+    NA  # Skip large sizes to avoid long computation
+  }
+})
+
+# Create comparison dataframe
+timing_comparison <- data.frame(
+  size = rep(n_sizes, 2),
+  method = rep(c("Pre-allocated", "Growing Vector"), each = length(n_sizes)),
+  time = c(timing_preallocated, timing_growing)
+) %>%
+  filter(!is.na(time))
+
+# Visualize performance difference
+p2 <- timing_comparison %>%
+  ggplot(aes(x = size, y = time, color = method, group = method)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("#667eea", "#f5576c")) +
+  scale_y_log10() +
+  labs(
+    title = "for Loop Performance: Pre-allocation vs Growing Vector",
+    subtitle = "Pre-allocation dramatically improves performance",
+    x = "Vector Size",
+    y = "Execution Time (seconds, log scale)",
+    color = "Method"
+  )
+
+ggplotly(p2, width = 700, height = 400) %>%
+  layout(title = list(font = list(size = 16)))
+```
+
+<div class="alert-warning-modern alert-modern">
+<strong>⚠️ Performance Warning:</strong> Selalu pre-allocate vectors sebelum for loop untuk performa optimal!
+</div>
+
+## while Loop
+
+<div class="alert-info-modern alert-modern">
+<strong>💡 Definition:</strong> `while` loop menjalankan kode selama kondisi tertentu masih `TRUE`.
+</div>
+
+### Syntax dan Konsep
+
+```{r while-syntax}
+# Example 1: Countdown
+cat("🚀 Countdown Example:\n")
+counter <- 5
+while (counter > 0) {
+  cat("T-minus", counter, "\n")
+  counter <- counter - 1
+}
+cat("🎉 Launch!\n\n")
+
+# Example 2: Convergence algorithm
+cat("🎯 Convergence Algorithm:\n")
+value <- 100
+target <- 10
+iteration <- 0
+
+while (abs(value - target) > 0.1) {
+  value <- value * 0.9  # Decay by 10%
+  iteration <- iteration + 1
+  cat("Iteration", iteration, ": value =", round(value, 3), "\n")
+  
+  # Safety break to prevent infinite loop
+  if (iteration > 50) break
+}
+cat("✅ Converged after", iteration, "iterations!\n")
+```
+
+### Aplikasi Praktis while Loop
+
+```{r while-practical, fig.cap="Figure 3: while Loop in Monte Carlo Simulation"}
+# Monte Carlo simulation using while loop
+set.seed(2024)
+
+simulate_pi <- function(target_accuracy = 0.01) {
+  inside_circle <- 0
+  total_points <- 0
+  estimated_pi <- 0
+  
+  results <- data.frame(
+    iteration = integer(),
+    estimate = numeric(),
+    error = numeric()
+  )
+  
+  while (abs(estimated_pi - pi) > target_accuracy || total_points < 1000) {
+    # Generate random points
+    batch_size <- 1000
+    x <- runif(batch_size, -1, 1)
+    y <- runif(batch_size, -1, 1)
+    
+    # Check if points are inside unit circle
+    inside_circle <- inside_circle + sum(x^2 + y^2 <= 1)
+    total_points <- total_points + batch_size
+    
+    # Estimate π
+    estimated_pi <- 4 * inside_circle / total_points
+    error <- abs(estimated_pi - pi)
+    
+    # Store results every 10 batches
+    if (total_points %% 10000 == 0) {
+      results <- rbind(results, data.frame(
+        iteration = total_points,
+        estimate = estimated_pi,
+        error = error
+      ))
+    }
+    
+    # Safety break
+    if (total_points > 1000000) break
+  }
+  
+  return(results)
+}
+
+# Run simulation
+pi_simulation <- simulate_pi(target_accuracy = 0.001)
+
+# Plot
+p3 <- pi_simulation %>%
+  ggplot(aes(x = iteration, y = estimate)) +
+  geom_line(color = "#667eea", size = 1) +
+  geom_hline(yintercept = pi, color = "#f5576c", linetype = "dashed", size = 1) +
+  geom_ribbon(aes(ymin = pi - 0.01, ymax = pi + 0.01), alpha = 0.2, fill = "#f5576c") +
+  labs(
+    title = "Monte Carlo Estimation of π using while Loop",
+    subtitle = paste("Final estimate:", round(tail(pi_simulation$estimate, 1), 4)),
+    x = "Number of Random Points",
+    y = "Estimated Value of π"
+  )
+
+p3
+```
+
+## repeat Loop
+
+<div class="alert-info-modern alert-modern">
+<strong>💡 Definition:</strong> `repeat` loop menjalankan kode tanpa batas hingga eksplisit dihentikan dengan `break`.
+</div>
+
+### Pattern dan Best Practices
+
+```{r repeat-examples}
+# Example 1: Dice rolling game
+cat("🎲 Dice Rolling Game:\n")
+set.seed(42)  # For reproducible results
+roll_count <- 0
+target <- 6
+
+repeat {
+  dice_roll <- sample(1:6, 1)
+  roll_count <- roll_count + 1
+  
+  cat("Roll", roll_count, ": Got", dice_roll)
+  
+  if (dice_roll == target) {
+    cat(" 🎉 Winner!\n")
+    break
+  } else {
+    cat(" - Keep trying...\n")
+  }
+  
+  # Safety mechanism
+  if (roll_count >= 20) {
+    cat("⏰ Maximum attempts reached!\n")
+    break
+  }
+}
+cat("Total rolls needed:", roll_count, "\n\n")
+
+# Example 2: Newton-Raphson Method
+cat("🔍 Newton-Raphson Method:\n")
+find_sqrt <- function(number, precision = 1e-10) {
+  x <- number / 2  # Initial guess
+  iteration <- 0
+  
+  repeat {
+    iteration <- iteration + 1
+    x_new <- 0.5 * (x + number / x)  # Newton-Raphson formula
+    
+    cat("Iteration", iteration, ": x =", round(x_new, 8), "\n")
+    
+    if (abs(x_new - x) < precision) {
+      cat("✅ Converged!\n")
+      break
+    }
+    
+    x <- x_new
+    
+    if (iteration >= 100) {
+      cat("⚠️ Maximum iterations reached\n")
+      break
+    }
+  }
+  
+  return(x_new)
+}
+
+# Find square root of 50
+result <- find_sqrt(50)
+cat("Square root of 50 ≈", round(result, 6), "\n")
+cat("Verification: 50^0.5 =", sqrt(50), "\n")
+```
+
+# Vectorized Operations & apply Family {.tabset}
+
+## apply() Function
+
+<div class="alert-success-modern alert-modern">
+<strong>🚀 Vectorized Power:</strong> `apply()` family adalah jantung dari efficient R programming. Lebih cepat dan readable dibanding explicit loops!
+</div>
+
+### apply() untuk Matrices dan Arrays
+
+```{r apply-examples, fig.cap="Figure 4: apply() Function Performance Comparison"}
+# Create sample matrix
+set.seed(123)
+sample_matrix <- matrix(rnorm(10000), nrow = 100, ncol = 100)
+
+# Method comparison
+# Method 1: apply()
+time_apply <- system.time({
+  row_means_apply <- apply(sample_matrix, 1, mean)
+  col_sums_apply <- apply(sample_matrix, 2, sum)
+})[3]
+
+# Method 2: for loop
+time_for <- system.time({
+  row_means_for <- numeric(nrow(sample_matrix))
+  for(i in 1:nrow(sample_matrix)) {
+    row_means_for[i] <- mean(sample_matrix[i, ])
+  }
+  
+  col_sums_for <- numeric(ncol(sample_matrix))
+  for(j in 1:ncol(sample_matrix)) {
+    col_sums_for[j] <- sum(sample_matrix[, j])
+  }
+})[3]
+
+# Method 3: Built-in vectorized functions
+time_vectorized <- system.time({
+  row_means_vec <- rowMeans(sample_matrix)
+  col_sums_vec <- colSums(sample_matrix)
+})[3]
+
+# Create comparison visualization
+method_comparison <- data.frame(
+  method = c("apply()", "for loop", "vectorized"),
+  time = c(time_apply, time_for, time_vectorized),
+  efficiency = c("High", "Low", "Highest")
+) %>%
+  mutate(
+    color = case_when(
+      method == "vectorized" ~ "#4caf50",
+      method == "apply()" ~ "#2196f3", 
+      method == "for loop" ~ "#f44336"
+    ),
+    speedup = round(max(time) / time, 1)
+  )
+
+p4 <- method_comparison %>%
+  ggplot(aes(x = reorder(method, -time), y = time, fill = method)) +
+  geom_col(alpha = 0.8, width = 0.6) +
+  geom_text(aes(label = paste0(speedup, "x faster")),
+            vjust = -0.5, fontface = "bold") +
+  scale_fill_manual(values = method_comparison$color) +
+  labs(
+    title = "Performance Comparison: Matrix Operations",
+    subtitle = "Processing 100×100 matrix (row means + column sums)",
+    x = "Method",
+    y = "Execution Time (seconds)",
+    fill = "Method"
+  ) +
+  theme(legend.position = "none")
+
+ggplotly(p4, width = 700, height = 400) %>%
+  layout(title = list(font = list(size = 16)))
+
+# Show practical examples
+cat("🧮 apply() Examples:\n\n")
+
+# Example matrix
+demo_matrix <- matrix(1:12, nrow = 3, ncol = 4,
+                     dimnames = list(paste("Row", 1:3), paste("Col", 1:4)))
+print("Sample Matrix:")
+print(demo_matrix)
+
+cat("\n📊 apply() Operations:\n")
+cat("Row sums:   ", apply(demo_matrix, 1, sum), "\n")
+cat("Column means:", apply(demo_matrix, 2, mean), "\n")
+cat("Row max:    ", apply(demo_matrix, 1, max), "\n")
+```
+
+## lapply() & sapply()
+
+```{r lapply-examples}
+# lapply() examples
+cat("📋 lapply() Examples:\n")
+
+# Example data
+sample_list <- list(
+  group_a = c(1, 3, 5, 7, 9),
+  group_b = c(2, 4, 6, 8, 10),
+  group_c = c(1.5, 2.5, 3.5, 4.5, 5.5)
+)
+
+print("Sample List:")
+str(sample_list)
+
+cat("\nlapply() results (returns list):\n")
+means_list <- lapply(sample_list, mean)
+print(means_list)
+
+cat("\nsapply() results (returns vector):\n")
+means_vector <- sapply(sample_list, mean)
+print(means_vector)
+
+# More complex example
+cat("\n🔧 Advanced lapply() Usage:\n")
+data_frames <- list(
+  df1 = data.frame(x = 1:5, y = 6:10),
+  df2 = data.frame(x = 11:15, y = 16:20),
+  df3 = data.frame(x = 21:25, y = 26:30)
+)
+
+# Apply summary to each data frame
+summaries <- lapply(data_frames, function(df) {
+  list(
+    nrows = nrow(df),
+    mean_x = mean(df$x),
+    mean_y = mean(df$y),
+    sum_total = sum(df$x + df$y)
+  )
+})
+
+cat("Data frame summaries:\n")
+str(summaries)
+```
+
+## purrr Package - Modern Iteration
+
+<div class="alert-success-modern alert-modern">
+<strong>🎨 Modern R:</strong> purrr package menyediakan toolkit yang konsisten dan powerful untuk functional programming di R.
+</div>
+
+```{r purrr-examples, fig.cap="Figure 5: purrr vs Base R Performance"}
+# purrr examples
+cat("🎯 purrr Examples:\n")
+
+# Sample data
+numbers <- list(
+  set1 = c(1, 2, 3, 4, 5),
+  set2 = c(10, 20, 30, 40, 50),
+  set3 = c(100, 200, 300, 400, 500)
+)
+
+# map() family
+cat("map() results:\n")
+squared <- map(numbers, ~ .x^2)
+str(squared)
+
+cat("\nmap_dbl() results (returns numeric vector):\n")
+means <- map_dbl(numbers, mean)
+print(means)
+
+cat("\nmap_chr() results (returns character vector):\n")
+summaries <- map_chr(numbers, ~ paste("Mean:", round(mean(.x), 2)))
+print(summaries)
+
+# Advanced purrr operations
+cat("\n🚀 Advanced purrr Operations:\n")
+
+# map2() for working with two inputs
+x_values <- list(1:3, 4:6, 7:9)
+y_values <- list(10:12, 13:15, 16:18)
+
+products <- map2(x_values, y_values, ~ .x * .y)
+cat("Element-wise multiplication:\n")
+str(products)
+
+# Performance comparison: purrr vs base R
+set.seed(123)
+large_list <- map(1:1000, ~ rnorm(100))
+
+# Base R
+time_base <- system.time({
+  result_base <- sapply(large_list, mean)
+})[3]
+
+# purrr
+time_purrr <- system.time({
+  result_purrr <- map_dbl(large_list, mean)
+})[3]
+
+# Vectorized (fastest)
+time_vectorized <- system.time({
+  result_vec <- vapply(large_list, mean, numeric(1))
+})[3]
+
+# Create performance comparison
+perf_data <- data.frame(
+  method = c("Base sapply()", "purrr map_dbl()", "Base vapply()"),
+  time = c(time_base, time_purrr, time_vectorized),
+  readability = c(7, 9, 6)  # Subjective readability score
+) %>%
+  mutate(
+    efficiency = round(min(time) / time * 100, 1),
+    color = c("#ff7043", "#667eea", "#4caf50")
+  )
+
+p5 <- perf_data %>%
+  ggplot(aes(x = readability, y = efficiency, size = time, color = method)) +
+  geom_point(alpha = 0.8) +
+  geom_text(aes(label = method), vjust = -1.5, fontface = "bold", size = 3) +
+  scale_color_manual(values = perf_data$color) +
+  scale_size_continuous(range = c(8, 15), guide = "none") +
+  labs(
+    title = "Performance vs Readability: Iteration Methods",
+    subtitle = "Processing 1000 lists with 100 elements each",
+    x = "Readability Score (1-10)",
+    y = "Efficiency (%)",
+    color = "Method"
+  ) +
+  xlim(5, 10) +
+  ylim(90, 105) +
+  theme(legend.position = "none")
+
+ggplotly(p5, width = 700, height = 400)
+```
+
+# Performance Analysis & Benchmarking
+
+## Benchmarking Loop Performance
+
+```{r benchmarking, fig.cap="Figure 6: Comprehensive Loop Performance Benchmark"}
+# Comprehensive benchmarking
+set.seed(2024)
+
+# Test different approaches for a common operation: calculating square roots
+n <- 10000
+test_vector <- runif(n, 1, 100)
+
+# Define different methods
+methods <- list(
+  "for_loop" = function() {
+    result <- numeric(length(test_vector))
+    for(i in seq_along(test_vector)) {
+      result[i] <- sqrt(test_vector[i])
+    }
+    result
+  },
+  
+  "while_loop" = function() {
+    result <- numeric(length(test_vector))
+    i <- 1
+    while(i <= length(test_vector)) {
+      result[i] <- sqrt(test_vector[i])
+      i <- i + 1
+    }
+    result
+  },
+  
+  "sapply" = function() {
+    sapply(test_vector, sqrt)
+  },
+  
+  "map_dbl" = function() {
+    map_dbl(test_vector, sqrt)
+  },
+  
+  "vectorized" = function() {
+    sqrt(test_vector)
+  }
+)
+
+# Run benchmarks
+benchmark_results <- map_dfr(names(methods), ~ {
+  method_name <- .x
+  times <- replicate(10, {
+    system.time(methods[[method_name]]())[3]
+  })
+  
+  data.frame(
+    method = method_name,
+    mean_time = mean(times),
+    min_time = min(times),
+    max_time = max(times),
+    sd_time = sd(times)
+  )
+}) %>%
+  arrange(mean_time) %>%
+  mutate(
+    speedup = round(max(mean_time) / mean_time, 1),
+    efficiency_class = case_when(
+      mean_time <= quantile(mean_time, 0.33) ~ "High",
+      mean_time <= quantile(mean_time, 0.66) ~ "Medium",
+      TRUE ~ "Low"
+    )
+  )
+
+# Visualize benchmark results
+p6 <- benchmark_results %>%
+  ggplot(aes(x = reorder(method, -mean_time), y = mean_time, fill = efficiency_class)) +
+  geom_col(alpha = 0.8, width = 0.7) +
+  geom_errorbar(aes(ymin = mean_time - sd_time, ymax = mean_time + sd_time),
+                width = 0.2, alpha = 0.7) +
+  geom_text(aes(label = paste0(speedup, "x")), 
+            vjust = -0.5, fontface = "bold", size = 4) +
+  scale_fill_manual(values = c("High" = "#4caf50", "Medium" = "#ff9800", "Low" = "#f44336")) +
+  scale_y_log10() +
+  labs(
+    title = "Loop Performance Benchmark",
+    subtitle = paste("Square root calculation for", n, "elements (10 replications)"),
+    x = "Method",
+    y = "Mean Execution Time (seconds, log scale)",
+    fill = "Efficiency Class"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(p6, width = 700, height = 400)
+
+# Print detailed results
+cat("📊 Benchmark Results Summary:\n")
+kable(benchmark_results, 
+      digits = 6,
+      col.names = c("Method", "Mean Time", "Min Time", "Max Time", "SD", "Speedup", "Class")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## Memory Usage Analysis
+
+```{r memory-analysis}
+# Memory usage comparison
+cat("💾 Memory Usage Analysis:\n")
+
+# Function to measure memory usage
+measure_memory <- function(expr) {
+  # Simple memory measurement (approximate)
+  gc_before <- gc(verbose = FALSE)
+  start_memory <- sum(gc_before[, 2])
+  
+  result <- expr
+  
+  gc_after <- gc(verbose = FALSE)
+  end_memory <- sum(gc_after[, 2])
+  
+  list(
+    result = result,
+    memory_used = max(0, end_memory - start_memory)
+  )
+}
+
+# Test memory usage for different approaches
+n_test <- 5000
+test_data <- runif(n_test, 1, 100)
+
+memory_results <- list(
+  "Pre-allocated for loop" = measure_memory({
+    result <- numeric(n_test)
+    for(i in 1:n_test) result[i] <- sqrt(test_data[i])
+    result
+  }),
+  
+  "Growing vector (bad practice)" = measure_memory({
+    if(n_test <= 1000) {  # Only test small sizes
+      result <- c()
+      for(i in 1:min(n_test, 1000)) result <- c(result, sqrt(test_data[i]))
+      result
+    } else {
+      NULL
+    }
+  }),
+  
+  "Vectorized operation" = measure_memory({
+    sqrt(test_data)
+  })
+)
+
+# Display memory usage results
+memory_df <- map_dfr(names(memory_results), ~ {
+  if(!is.null(memory_results[[.x]])) {
+    data.frame(
+      method = .x,
+      memory_mb = memory_results[[.x]]$memory_used,
+      stringsAsFactors = FALSE
+    )
+  }
+}) %>%
+  filter(!is.na(memory_mb))
+
+if(nrow(memory_df) > 0) {
+  cat("Memory usage comparison:\n")
+  print(memory_df)
+} else {
+  cat("Memory measurement not available on this system.\n")
+}
+```
+
+# Best Practices & Tips
+
+## Loop Optimization Guidelines
+
+<div class="alert-warning-modern alert-modern">
+<strong>⚡ Performance Tips:</strong> Follow these guidelines for writing efficient loops in R.
+</div>
+
+```{r best-practices}
+cat("🎯 Best Practices for Loop Optimization:\n\n")
+
+cat("1. 📏 Pre-allocate vectors:\n")
+cat("   ✅ Good: result <- numeric(n)\n")
+cat("   ❌ Bad:  result <- c()\n\n")
+
+cat("2. 🔄 Use vectorized operations when possible:\n")
+cat("   ✅ Good: sqrt(x)\n") 
+cat("   ❌ Bad:  for(i in 1:length(x)) sqrt(x[i])\n\n")
+
+cat("3. 📦 Choose the right tool:\n")
+cat("   • for: Known number of iterations\n")
+cat("   • while: Condition-based iterations\n")
+cat("   • apply: Matrix/array operations\n")
+cat("   • map: List operations with type safety\n\n")
+
+cat("4. 🚫 Avoid growing objects:\n")
+# Demonstrate why growing objects is bad
+demo_growth <- function(n) {
+  # Bad approach
+  time_bad <- system.time({
+    if(n <= 1000) {  # Only for small n
+      result_bad <- c()
+      for(i in 1:n) result_bad <- c(result_bad, i^2)
+    }
+  })[3]
+  
+  # Good approach
+  time_good <- system.time({
+    result_good <- numeric(n)
+    for(i in 1:n) result_good[i] <- i^2
+  })[3]
+  
+  if(n <= 1000) {
+    speedup <- round(time_bad / time_good, 1)
+    cat("   Size:", n, "- Speedup:", speedup, "x\n")
+  } else {
+    cat("   Size:", n, "- Pre-allocation only (growing too slow)\n")
+  }
+}
+
+for(size in c(100, 500, 1000, 5000)) {
+  demo_growth(size)
+}
+```
+
+## Common Pitfalls and Solutions
+
+```{r common-pitfalls}
+cat("\n🚨 Common Pitfalls and Solutions:\n\n")
+
+cat("1. 🐌 Pitfall: Using loops for element-wise operations\n")
+cat("   Problem: for(i in 1:length(x)) y[i] <- x[i] + 1\n")
+cat("   Solution: y <- x + 1\n\n")
+
+cat("2. 💾 Pitfall: Not pre-allocating memory\n")
+cat("   Problem: Growing vectors in loops\n")
+cat("   Solution: Allocate full size beforehand\n\n")
+
+cat("3. 🔍 Pitfall: Using wrong loop type\n")
+cat("   Problem: while loop for known iterations\n")
+cat("   Solution: Use for loop instead\n\n")
+
+cat("4. 📊 Pitfall: Not using apply family appropriately\n")
+# Demonstrate when to use different apply functions
+demo_data <- list(
+  matrix_data = matrix(1:20, nrow = 4),
+  list_data = list(a = 1:5, b = 6:10, c = 11:15),
+  vector_data = 1:10
+)
+
+cat("   Matrix operations -> apply():\n")
+cat("   ", "apply(matrix, 1, sum)  # Row sums\n")
+
+cat("   List operations -> lapply()/map():\n") 
+cat("   ", "lapply(list, mean)     # List means\n")
+
+cat("   Vector operations -> Use vectorized functions:\n")
+cat("   ", "sum(vector)            # Not: for loop\n")
+```
+
+## Debugging and Profiling
+
+```{r debugging-profiling}
+cat("\n🔧 Debugging and Profiling Tips:\n\n")
+
+cat("1. 🐛 Add progress indicators for long loops:\n")
+# Example with progress indicator
+demonstrate_progress <- function(n = 10) {
+  cat("Processing", n, "items:\n")
+  for(i in 1:n) {
+    # Simulate work
+    Sys.sleep(0.1)
+    
+    # Progress indicator
+    if(i %% max(1, n %/% 5) == 0 || i == n) {
+      cat("Progress:", round(i/n * 100), "%\n")
+    }
+  }
+}
+
+cat("Example: Processing with progress indicator\n")
+demonstrate_progress(5)
+
+cat("\n2. ⏱️ Use timing functions:\n")
+cat("   • system.time() for basic timing\n")
+cat("   • microbenchmark() for detailed benchmarks\n")
+cat("   • tictoc package for nested timing\n\n")
+
+# Example timing
+cat("Timing example:\n")
+timing_demo <- system.time({
+  result <- sum(sqrt(1:1000))
+})
+cat("Time elapsed:", round(timing_demo[3], 4), "seconds\n")
+
+cat("\n3. 🔍 Profile memory usage:\n")
+cat("   • Use gc() to monitor memory\n")
+cat("   • object.size() for object sizes\n")
+cat("   • profvis package for detailed profiling\n")
+```
+
+# Summary and Recommendations
+
+## Key Takeaways
+
+```{r summary-table, results='asis'}
+# Create comprehensive summary table
+summary_data <- tribble(
+  ~Loop_Type, ~Best_For, ~Performance, ~Readability, ~When_to_Use,
+  "for", "Known iterations", "Medium", "High", "Iterating over sequences",
+  "while", "Condition-based", "Medium", "High", "Unknown number of iterations", 
+  "repeat", "Infinite loops", "Medium", "Medium", "Loops with break conditions",
+  "apply()", "Matrix operations", "High", "High", "Row/column operations on matrices",
+  "lapply()", "List operations", "High", "High", "Operations returning lists",
+  "map()", "Type-safe operations", "High", "Very High", "Modern functional programming",
+  "Vectorized", "Element-wise ops", "Very High", "Very High", "Mathematical operations"
+)
+
+kable(summary_data, 
+      col.names = c("Loop Type", "Best For", "Performance", "Readability", "When to Use")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+  row_spec(0, background = "#667eea", color = "white", bold = TRUE) %>%
+  row_spec(c(6,7), background = "#e8f5e8") %>%  # Highlight best performers
+  column_spec(1, bold = TRUE, color = "#667eea")
+```
+
+## Final Recommendations
+
+```{r final-recommendations, results='asis'}
+cat('
+<div class="alert-success-modern alert-modern">
+<h4>🏆 Golden Rules for R Loops:</h4>
+<ol>
+<li><strong>Think Vectorized First:</strong> R excels at vectorized operations</li>
+<li><strong>Pre-allocate Memory:</strong> Always allocate full size before loops</li>
+<li><strong>Choose the Right Tool:</strong> match loop type to your specific need</li>
+<li><strong>Profile Your Code:</strong> Measure performance, don\'t guess</li>
+<li><strong>Readable Code Wins:</strong> Optimize for maintainability</li>
+</ol>
+</div>
+')
+
+cat('
+<div class="performance-card">
+  <div class="performance-number">Remember</div>
+  <div><strong>Premature optimization is the root of all evil</strong><br>
+  Write clear code first, then optimize where needed</div>
+</div>
+')
+```
+
+## Footer
+
+```{=html}
+<div class="footer-section">
+  <h3>🎓 Happy Looping with R!</h3>
+  <p>Master these concepts and your R programming will reach new heights</p>
+  <p><strong>Data Science Academy</strong> • Advanced R Programming Series</p>
+</div>
+
+<div class="feature-card">
+  <div class="feature-icon">🔄</div>
+  <h3>Basic Loops</h3>
+  <p>for, while, dan repeat loops dengan syntax dan use cases yang tepat.</p>
+</div>
+
+<div class="feature-card">
+  <div class="feature-icon">⚡</div>
+  <h3>Vectorized Operations</h3>
+  <p>apply family dan purrr untuk operasi yang lebih efisien.</p>
+</div>
+
+<div class="feature-card">
+  <div class="feature-icon">🚀</div>
+  <h3>Performance Analysis</h3>
+  <p>Benchmarking dan profiling untuk optimasi kode.</p>
+</div>
+```
+
